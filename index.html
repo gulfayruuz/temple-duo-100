@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Огонь и Вода — Храм стихий</title>
+  <link rel="stylesheet" href="game.css">
+  <script defer src="levels.js"></script>
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div><small>КООПЕРАТИВНАЯ ИГРА · 100 УРОВНЕЙ</small><h1><em>Огонь</em> и <strong>Вода</strong></h1></div>
+      <nav aria-label="Меню">
+        <button id="levels">Уровни</button><button id="restart">Заново <kbd>R</kbd></button><button id="settings">Настройки</button>
+      </nav>
+    </header>
+    <section class="stage" aria-label="Игровое поле">
+      <div class="hud"><b id="chapter"></b><span id="stats"></span></div>
+      <canvas id="board" width="960" height="540">Для игры нужен браузер с поддержкой Canvas.</canvas>
+      <div id="overlay" class="overlay" hidden>
+        <article><small>ХРАМ СТИХИЙ</small><h2 id="result-title"></h2><p id="result-text"></p><button id="continue"></button></article>
+      </div>
+    </section>
+    <footer>
+      <div class="fire"><b>Огонь</b><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd></div>
+      <p id="hint">Ведите обоих героев к дверям их цвета.</p>
+      <div class="water"><b>Вода</b><kbd>A</kbd><kbd>W</kbd><kbd>D</kbd></div>
+    </footer>
+  </main>
+  <dialog id="level-menu">
+    <form method="dialog"><button class="close" aria-label="Закрыть">×</button></form>
+    <h2>Карта храма</h2><p>Можно выбрать любой уровень. Пройденные отмечены галочкой.</p><div id="map"></div>
+  </dialog>
+  <dialog id="settings-menu">
+    <form method="dialog"><button class="close" aria-label="Закрыть">×</button></form>
+    <h2>Настройки</h2>
+    <label>Громкость <input id="volume" type="range" min="0" max="100" value="35"></label>
+    <label><input id="effects" type="checkbox" checked> Свечение и частицы</label>
+    <label><input id="tips" type="checkbox" checked> Показывать подсказки</label>
+    <label><input id="fullscreen" type="checkbox"> Полноэкранный режим</label>
+    <p>Клавиши R — начать заново, Esc — пауза. Прогресс хранится в этом браузере.</p>
+  </dialog>
+</body>
+</html>

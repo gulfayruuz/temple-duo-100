@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<defs>
+<radialGradient id="light"><stop stop-color="#3a5043"/><stop offset="1" stop-color="#121b1a"/></radialGradient>
+<pattern id="wall" width="72" height="34" patternUnits="userSpaceOnUse"><path d="M0 0h72M0 17h72M17 0v17m36 0v17" fill="none" stroke="#9aa186" stroke-opacity=".11"/></pattern>
+<pattern id="arches" width="192" height="540" patternUnits="userSpaceOnUse"><path d="M23 535V132a73 73 0 0 1 146 0v403" stroke="#161f1d" stroke-width="18" fill="none"/><path d="M41 535V132a55 55 0 0 1 110 0v403Z" fill="#101916" opacity=".55"/><path d="M12 524h32m105 0h32M12 120h30m108 0h30" stroke="#435043" stroke-width="6"/></pattern>
+</defs>
+<path fill="url(#light)" d="M0 0h960v540H0z"/><path fill="url(#wall)" d="M0 0h960v540H0z"/><path fill="url(#arches)" d="M0 0h960v540H0z"/>
+<g fill="#68816a" opacity=".5"><path d="M0 0h192L86 22 62 54 38 24 0 44zM755 0h205v55l-31-28-34 16-50-25-23 18-25-20z"/></g>
+</svg>
