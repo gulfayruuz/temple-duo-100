@@ -12,11 +12,14 @@
   let lastInput = 0;
   let library;
   let roomUrl = '';
+  let hiddenTick = 0;
+  let hiddenRemainder = 0;
 
   function message(text) {
     byId('online-status').textContent = text;
     byId('online-banner').textContent = text;
-    byId('online-banner').hidden = !text || onlineRole === 'local';
+    byId('online-strip').hidden = !text || onlineRole === 'local';
+    byId('quick-invite').hidden = onlineRole !== 'host' || !roomUrl || onlineReady;
   }
 
   function configureRole(role) {
@@ -28,6 +31,7 @@
     byId('restart').disabled = role === 'guest';
     byId('continue').hidden = role === 'guest';
     byId('leave-room').hidden = role === 'local';
+    byId('resume-room').hidden = role !== 'host';
     byId('create-room').hidden = role !== 'local';
     byId('join-room').hidden = role !== 'local' || !roomPattern.test(requestedRoom);
     byId('invite-box').hidden = role !== 'host' || !roomUrl;
@@ -85,21 +89,23 @@
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       if (connection !== link || onlineReady) return;
+      disconnected('Подключение не установилось. Оставьте игру открытой у создателя и попробуйте снова.');
       link.close();
-      disconnected();
-    }, 15000);
+    }, 30000);
 
-    function disconnected() {
+    function disconnected(reason) {
       if (connection !== link || activeAttempt !== attempt) return;
       clearTimeout(timeout);
       connection = undefined;
       if (onlineRole === 'guest') {
-        stopRoom('Связь потеряна. Проверьте, что у создателя открыта игра, и подключитесь снова.');
+        stopRoom(typeof reason === 'string' ? reason
+          : 'Связь потеряна. Откройте приглашение снова, пока у создателя открыта игра.');
       } else {
         onlineReady = false;
         remoteControls = {left: false, right: false, jump: false};
         clearKeys();
-        message('Партнёр отключился. Отправьте ему ту же ссылку, чтобы продолжить.');
+        message(typeof reason === 'string' ? reason
+          : 'Партнёр отключился. Отправьте ему ту же ссылку, чтобы продолжить.');
       }
       showMenu();
     }
@@ -119,10 +125,26 @@
     link.on('data', (packet) => {
       if (connection !== link || !onlineReady || !packet || typeof packet !== 'object') return;
       if (onlineRole === 'host' && packet.type === 'input') {
-        lastInput = performance.now();
+        const now = performance.now();
+        lastInput = now;
         remoteControls.left = packet.left === true;
         remoteControls.right = packet.right === true;
         remoteControls.jump ||= packet.jump === true;
+        // В фоновой вкладке браузер останавливает requestAnimationFrame.
+        // Пока гость активен, его пакеты поддерживают симуляцию хозяина.
+        if (document.hidden && status === 'playing' && !menu.open &&
+            !levelMenu.open && !settingsMenu.open) {
+          hiddenRemainder += hiddenTick ? Math.min(80, now - hiddenTick) : 0;
+          hiddenTick = now;
+          while (hiddenRemainder >= FRAME_TIME && status === 'playing') {
+            hiddenRemainder -= FRAME_TIME;
+            updateGame();
+          }
+          send({type: 'state', state: onlineSnapshot()});
+        } else {
+          hiddenTick = 0;
+          hiddenRemainder = 0;
+        }
       }
       if (onlineRole === 'guest' && packet.type === 'state') {
         const state = packet.state;
@@ -134,6 +156,10 @@
 
   async function startRoom(role) {
     if (onlineRole !== 'local') return;
+    if (location.protocol === 'file:') {
+      message('Для комнаты откройте игру на GitHub Pages: локальная ссылка не откроется на другом компьютере.');
+      return;
+    }
     const activeAttempt = ++attempt;
     configureRole(role);
     message('Подключаемся к сервису комнат…');
@@ -161,7 +187,8 @@
           roomUrl = url.href;
           invite.value = roomUrl;
           byId('invite-box').hidden = false;
-          message('Комната открыта. Отправьте ссылку и оставьте эту вкладку открытой.');
+          message('Огонь · Ожидаем Воду. Скопируйте приглашение и оставьте вкладку открытой.');
+          if (menu.open) menu.close();
         }
       });
       peer.on('connection', (link) => {
@@ -185,20 +212,25 @@
   byId('online').onclick = showMenu;
   byId('create-room').onclick = () => startRoom('host');
   byId('join-room').onclick = () => startRoom('guest');
+  byId('resume-room').onclick = () => menu.close();
   byId('leave-room').onclick = () => stopRoom('Режим на одной клавиатуре включён.');
-  byId('copy-invite').onclick = async () => {
+  async function copyInvite() {
     try {
       await navigator.clipboard.writeText(roomUrl);
-      message('Ссылка скопирована. Отправьте её второму игроку.');
+      message('Огонь · Ожидаем Воду. Ссылка скопирована, отправьте её второму игроку.');
+      if (menu.open) menu.close();
     } catch {
+      showMenu();
       invite.select();
       message('Скопируйте выделенную ссылку клавишами Ctrl+C.');
     }
-  };
+  }
+  byId('copy-invite').onclick = copyInvite;
+  byId('quick-invite').onclick = copyInvite;
   configureRole('local');
   if (roomPattern.test(requestedRoom)) {
-    message('Вас пригласили играть за Воду.');
     showMenu();
+    startRoom('guest');
   }
 
   setInterval(() => {
@@ -210,8 +242,10 @@
       send({type: 'state', state: onlineSnapshot()});
     } else {
       const keys = controls[1];
-      send({type: 'input', left: heldKeys.has(keys.left), right: heldKeys.has(keys.right),
-        jump: pressedKeys.has(keys.jump)});
+      const arrows = controls[0];
+      send({type: 'input', left: heldKeys.has(keys.left) || heldKeys.has(arrows.left),
+        right: heldKeys.has(keys.right) || heldKeys.has(arrows.right),
+        jump: pressedKeys.has(keys.jump) || pressedKeys.has(arrows.jump)});
       pressedKeys.clear();
     }
   }, 33);

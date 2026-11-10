@@ -516,8 +516,7 @@ window.addEventListener('keydown', (event) => {
   if (levelMenu.open || settingsMenu.open || byId('online-menu').open || event.ctrlKey || event.metaKey || event.altKey) return;
   if (gameKeys.has(event.code)) {
     event.preventDefault();
-    const assigned = onlineRole === 'guest' ? controls[1] : controls[0];
-    if (onlineRole !== 'local' && !Object.values(assigned).includes(event.code)) return;
+    if (onlineRole === 'host' && !Object.values(controls[0]).includes(event.code)) return;
     if (status === 'playing') {
       if (!heldKeys.has(event.code)) pressedKeys.add(event.code);
       heldKeys.add(event.code);
@@ -578,7 +577,7 @@ function frame(now) {
   while (pendingTime >= FRAME_TIME) {
     pendingTime -= FRAME_TIME;
     animationTime++;
-    const canSimulate = onlineRole === 'local' || (onlineRole === 'host' && onlineReady);
+    const canSimulate = onlineRole !== 'guest';
     if (canSimulate && status === 'playing' && !levelMenu.open && !settingsMenu.open &&
         !byId('online-menu').open && !document.hidden) updateGame();
   }

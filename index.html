@@ -17,7 +17,10 @@
         <button id="levels">Уровни</button><button id="restart">Заново <kbd>R</kbd></button><button id="settings">Настройки</button><button id="online">Играть онлайн</button>
       </nav>
     </header>
-    <p id="online-banner" role="status" hidden></p>
+    <div class="room-actions" id="online-strip" hidden>
+      <p id="online-banner" role="status"></p>
+      <button id="quick-invite" hidden>Скопировать приглашение</button>
+    </div>
     <section class="stage" aria-label="Игровое поле">
       <div class="hud"><b id="chapter"></b><span id="stats"></span></div>
       <canvas id="board" width="960" height="540">Для игры нужен браузер с поддержкой Canvas.</canvas>
@@ -42,12 +45,13 @@
     <div class="room-actions">
       <button id="create-room">Создать комнату</button>
       <button id="join-room" hidden>Присоединиться</button>
+      <button id="resume-room" hidden>Вернуться в игру</button>
       <button id="leave-room" hidden>На одной клавиатуре</button>
     </div>
     <label id="invite-box" hidden>Приглашение <input id="invite" readonly>
       <button id="copy-invite">Копировать</button>
     </label>
-    <p>Создатель комнаты играет за Огонь (стрелки). Гость — за Воду (A, W, D).</p>
+    <p>Создатель комнаты играет за Огонь (стрелки). Гость — за Воду (стрелки или A, W, D).</p>
   </dialog>
   <dialog id="settings-menu">
     <form method="dialog"><button class="close" aria-label="Закрыть">×</button></form>
