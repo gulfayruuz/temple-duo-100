@@ -26,6 +26,9 @@ let particles;
 let status;
 let animationTime = 0;
 let audioContext;
+let onlineRole = 'local';
+let onlineReady = false;
+let remoteControls = {left: false, right: false, jump: false};
 const heldKeys = new Set();
 const pressedKeys = new Set();
 const controls = [
@@ -164,15 +167,18 @@ function gateIsOpen(gate) {
 }
 
 function updatePlayer(player, keys) {
+  const remote = onlineRole === 'host' && player.kind === 1 ? remoteControls : null;
   if (player.support?.baseY !== undefined) player.y += player.support.delta;
-  const direction = Number(heldKeys.has(keys.right)) - Number(heldKeys.has(keys.left));
+  const direction = remote ? Number(remote.right) - Number(remote.left)
+    : Number(heldKeys.has(keys.right)) - Number(heldKeys.has(keys.left));
   player.vx = direction * 4.05;
   if (direction) {
     player.facing = direction;
     player.walkTime++;
   }
 
-  if (pressedKeys.has(keys.jump)) player.jumpBuffer = 6;
+  if (remote ? remote.jump : pressedKeys.has(keys.jump)) player.jumpBuffer = 6;
+  if (remote) remote.jump = false;
   if (player.jumpBuffer > 0 && player.grounded) {
     player.vy = -11.2;
     player.grounded = false;
@@ -507,14 +513,17 @@ document.addEventListener('fullscreenchange', () => {
 
 const gameKeys = new Set(controls.flatMap((player) => Object.values(player)));
 window.addEventListener('keydown', (event) => {
-  if (levelMenu.open || settingsMenu.open || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (levelMenu.open || settingsMenu.open || byId('online-menu').open || event.ctrlKey || event.metaKey || event.altKey) return;
   if (gameKeys.has(event.code)) {
     event.preventDefault();
+    const assigned = onlineRole === 'guest' ? controls[1] : controls[0];
+    if (onlineRole !== 'local' && !Object.values(assigned).includes(event.code)) return;
     if (status === 'playing') {
       if (!heldKeys.has(event.code)) pressedKeys.add(event.code);
       heldKeys.add(event.code);
     }
   }
+  if (onlineRole === 'guest') return;
   if (event.code === 'KeyR' && !event.repeat) startLevel(level.number);
   if (event.code === 'Escape' && !event.repeat) {
     if (status === 'playing') showOverlay('pause', 'Пауза', 'Оба героя ждут вас.', 'Продолжить');
@@ -524,6 +533,40 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('keyup', (event) => heldKeys.delete(event.code));
 window.addEventListener('blur', clearKeys);
 document.addEventListener('visibilitychange', clearKeys);
+
+function onlineSnapshot() {
+  const playerViews = players.map(({x, y, kind, vx, grounded, facing, atDoor, walkTime}) =>
+    ({x, y, kind, vx, grounded, facing, atDoor, walkTime}));
+  return {
+    number: level.number, elapsed, status, players: playerViews,
+    gems: level.gems.map((gem) => Boolean(gem.collected)),
+    gates: level.gates.map(({open, latched}) => ({open, latched})),
+    plates: level.plates.map((plate) => Boolean(plate.active)),
+    movers: level.movers.map((mover) => mover.y),
+    overlay: byId('overlay').hidden ? null : {
+      title: byId('result-title').textContent, description: byId('result-text').textContent
+    }
+  };
+}
+
+function applyOnlineSnapshot(state) {
+  const changedLevel = state.number !== level.number || state.elapsed < elapsed;
+  if (changedLevel) startLevel(state.number);
+  elapsed = state.elapsed;
+  players = state.players;
+  level.gems.forEach((gem, i) => { gem.collected = state.gems[i]; });
+  level.gates.forEach((gate, i) => Object.assign(gate, state.gates[i]));
+  level.plates.forEach((plate, i) => { plate.active = state.plates[i]; });
+  level.movers.forEach((mover, i) => { mover.y = state.movers[i]; });
+  if (status !== state.status) clearKeys();
+  status = state.status;
+  byId('overlay').hidden = !state.overlay;
+  if (state.overlay) {
+    byId('result-title').textContent = state.overlay.title;
+    byId('result-text').textContent = state.overlay.description + ' Продолжение выбирает создатель комнаты.';
+  }
+  updateStats();
+}
 
 let lastFrame;
 let pendingTime = 0;
@@ -535,7 +578,9 @@ function frame(now) {
   while (pendingTime >= FRAME_TIME) {
     pendingTime -= FRAME_TIME;
     animationTime++;
-    if (status === 'playing' && !levelMenu.open && !settingsMenu.open && !document.hidden) updateGame();
+    const canSimulate = onlineRole === 'local' || (onlineRole === 'host' && onlineReady);
+    if (canSimulate && status === 'playing' && !levelMenu.open && !settingsMenu.open &&
+        !byId('online-menu').open && !document.hidden) updateGame();
   }
   render();
   requestAnimationFrame(frame);

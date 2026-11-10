@@ -7,15 +7,17 @@
   <link rel="stylesheet" href="game.css">
   <script defer src="levels.js"></script>
   <script defer src="game.js"></script>
+  <script defer src="online.js"></script>
 </head>
 <body>
   <main>
     <header>
       <div><small>КООПЕРАТИВНАЯ ИГРА · 100 УРОВНЕЙ</small><h1><em>Огонь</em> и <strong>Вода</strong></h1></div>
       <nav aria-label="Меню">
-        <button id="levels">Уровни</button><button id="restart">Заново <kbd>R</kbd></button><button id="settings">Настройки</button>
+        <button id="levels">Уровни</button><button id="restart">Заново <kbd>R</kbd></button><button id="settings">Настройки</button><button id="online">Играть онлайн</button>
       </nav>
     </header>
+    <p id="online-banner" role="status" hidden></p>
     <section class="stage" aria-label="Игровое поле">
       <div class="hud"><b id="chapter"></b><span id="stats"></span></div>
       <canvas id="board" width="960" height="540">Для игры нужен браузер с поддержкой Canvas.</canvas>
@@ -32,6 +34,20 @@
   <dialog id="level-menu">
     <form method="dialog"><button class="close" aria-label="Закрыть">×</button></form>
     <h2>Карта храма</h2><p>Можно выбрать любой уровень. Пройденные отмечены галочкой.</p><div id="map"></div>
+  </dialog>
+  <dialog id="online-menu">
+    <form method="dialog"><button class="close" aria-label="Закрыть">×</button></form>
+    <h2>Играть онлайн</h2>
+    <p id="online-status" role="status">Создайте комнату и отправьте ссылку второму игроку.</p>
+    <div class="room-actions">
+      <button id="create-room">Создать комнату</button>
+      <button id="join-room" hidden>Присоединиться</button>
+      <button id="leave-room" hidden>На одной клавиатуре</button>
+    </div>
+    <label id="invite-box" hidden>Приглашение <input id="invite" readonly>
+      <button id="copy-invite">Копировать</button>
+    </label>
+    <p>Создатель комнаты играет за Огонь (стрелки). Гость — за Воду (A, W, D).</p>
   </dialog>
   <dialog id="settings-menu">
     <form method="dialog"><button class="close" aria-label="Закрыть">×</button></form>
